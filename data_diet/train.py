@@ -5,7 +5,7 @@ import numpy as np
 import time
 from .data import load_data, train_batches
 from .forgetting import init_forget_stats, update_forget_stats, save_forget_scores
-from .metrics import accuracy, correct, cross_entropy_loss
+from .metrics import accuracy, correct, cross_entropy_loss, cross_entropy_loss_per_element
 from .models import get_apply_fn_test, get_apply_fn_train, get_coteaching_model
 from .recorder import init_recorder, record_ckpt, record_test_stats, record_train_stats, save_recorder
 from .test import get_test_step, test
@@ -64,11 +64,11 @@ def get_coteaching_loss_fn(f_train_1, f_train_2, remember_rate=0.5):
     logits_1, model_state_1 = f_train_1(params_1, model_state_1, x)
     logits_2, model_state_2 = f_train_2(params_2, model_state_2, x)
     
-    loss_1 = cross_entropy_loss(logits_1, y)
+    loss_1 = cross_entropy_loss_per_element(logits_1, y)
     acc_1 = accuracy(logits_1, y)
     ind_1_sorted = jnp.argsort(loss_1)
 
-    loss_2 = cross_entropy_loss(logits_2, y)
+    loss_2 = cross_entropy_loss_per_element(logits_2, y)
     acc_2 = accuracy(logits_2, y)
     ind_2_sorted = jnp.argsort(loss_2)
     
@@ -77,7 +77,7 @@ def get_coteaching_loss_fn(f_train_1, f_train_2, remember_rate=0.5):
 
     loss_1_update = cross_entropy_loss(logits_1[:ind_2_update], y[ind_2_update])
     loss_2_update = cross_entropy_loss(logits_2[:ind_1_update], y[ind_1_update])
-    return loss_1_update + loss_2_update, (loss_1, acc_1, logits_1, model_state_1), (loss_2, acc_2, logits_2, model_state_2)
+    return loss_1_update + loss_2_update, (loss_1_update, acc_1, logits_1, model_state_1), (loss_2_update, acc_2, logits_2, model_state_2)
   return loss_fn
 
 

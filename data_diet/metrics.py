@@ -6,6 +6,10 @@ def cross_entropy_loss(logits, labels):
   return jnp.mean(-jnp.sum(nn.log_softmax(logits) * labels, axis=-1))
 
 
+def cross_entropy_loss_per_element(logits, labels):
+  return -jnp.sum(nn.log_softmax(logits) * labels, axis=-1)
+
+
 def correct(logits, labels):
   return jnp.argmax(logits, axis=-1) == jnp.argmax(labels, axis=-1)
 
