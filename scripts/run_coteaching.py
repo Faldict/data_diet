@@ -28,8 +28,8 @@ args.scores_path = None
 args.subset_offset = None
 args.random_subset_seed = None
 # model
-args.model_1 = 'resnet18_lowres'
-args.model_2 = 'resnet50_lowres'
+args.model_1 = 'resnet50_lowres'
+args.model_2 = 'resnet18_lowres'
 args.model_seed = META_MODEL_SEED + RUN * SEED_INCR
 args.load_dir = None
 args.ckpt = 0
@@ -49,7 +49,7 @@ args.test_batch_size = 1024
 args.augment = True
 args.track_forgetting = True
 # checkpoints
-args.save_dir = EXPS_DIR + f'/{EXP}/run_{RUN}'
+args.save_dir = EXPS_DIR + f'/{EXP}/coteaching_{RUN}'
 args.log_steps = EP_STEPS
 args.early_step = 0
 args.early_save_steps = None
