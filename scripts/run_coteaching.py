@@ -1,7 +1,8 @@
-# python run_full_data.py <ROOT:str> <EXP:str> <RUN:int>
+# python run_coteaching.py <ROOT:str> <EXP:str> <RUN:int>
 
 from data_diet.train import coteaching
 import sys
+import time
 from types import SimpleNamespace
 
 # setup
@@ -19,6 +20,7 @@ args = SimpleNamespace()
 args.data_dir = DATA_DIR
 args.dataset = 'cifar10'
 args.random_label_fraction = 0.6
+args.random_label_seed = int(time.time()) % 20211027
 # subsets
 args.subset = None
 args.subset_size = None
