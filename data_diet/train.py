@@ -6,7 +6,7 @@ import time
 from .data import load_data, train_batches
 from .forgetting import init_forget_stats, update_forget_stats, save_forget_scores
 from .metrics import accuracy, correct, cross_entropy_loss
-from .models import get_apply_fn_test, get_apply_fn_train, get_model
+from .models import get_apply_fn_test, get_apply_fn_train, get_coteaching_model
 from .recorder import init_recorder, record_ckpt, record_test_stats, record_train_stats, save_recorder
 from .test import get_test_step, test
 from .train_state import TrainState, get_train_state
@@ -200,14 +200,13 @@ def coteaching(args):
   I_train, X_train, Y_train, X_test, Y_test, args = load_data(args)
   
   # model 1
-  model_1 = get_model(args)
+  model_1, model_2 = get_coteaching_model(args)
   state_1, args = get_train_state(args, model_1)
   f_train_1, f_test_1 = get_apply_fn_train(model_1), get_apply_fn_test(model_1)
   test_step_1 = jit(get_test_step(f_test_1))
   # train_step_1 = jit(get_train_step(value_and_grad(get_loss_fn(f_train_1), has_aux=True)))
 
   # model 2
-  model_2 = get_model(args)
   state_2, args = get_train_state(args, model_2)
   f_train_2, f_test_2 = get_apply_fn_train(model_2), get_apply_fn_test(model_2)
   test_step_2 = jit(get_test_step(f_test_2))
