@@ -4,6 +4,10 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 import time
 
+config = tf.compat.v1.ConfigProto()
+config.gpu_options.allow_growth = True
+session = tf.compat.v1.Session(config=config)
+
 
 ########################################################################################################################
 #  Load Data

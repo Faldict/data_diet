@@ -25,7 +25,7 @@ args.scores_path = None
 args.subset_offset = None
 args.random_subset_seed = None
 # model
-args.model = 'resnet18_lowres'
+args.model = 'resnet50_lowres'
 args.model_seed = META_MODEL_SEED + RUN * SEED_INCR
 args.load_dir = None
 args.ckpt = 0
