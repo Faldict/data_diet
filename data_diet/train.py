@@ -75,8 +75,8 @@ def get_coteaching_loss_fn(f_train_1, f_train_2, remember_rate=0.5):
     num_remember = int(remember_rate * len(ind_1_sorted))
     ind_1_update, ind_2_update = ind_1_sorted[:num_remember], ind_2_sorted[:num_remember]
 
-    loss_1_update = cross_entropy_loss(logits_1[:ind_2_update], y[ind_2_update])
-    loss_2_update = cross_entropy_loss(logits_2[:ind_1_update], y[ind_1_update])
+    loss_1_update = cross_entropy_loss(logits_1[ind_2_update], y[ind_2_update])
+    loss_2_update = cross_entropy_loss(logits_2[ind_1_update], y[ind_1_update])
     return loss_1_update + loss_2_update, (loss_1_update, acc_1, logits_1, model_state_1), (loss_2_update, acc_2, logits_2, model_state_2)
   return loss_fn
 
