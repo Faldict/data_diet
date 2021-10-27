@@ -77,13 +77,13 @@ def get_coteaching_loss_fn(f_train_1, f_train_2, remember_rate=0.5):
 
     loss_1_update = cross_entropy_loss(logits_1[ind_2_update], y[ind_2_update])
     loss_2_update = cross_entropy_loss(logits_2[ind_1_update], y[ind_1_update])
-    return loss_1_update + loss_2_update, (loss_1_update, acc_1, logits_1, model_state_1), (loss_2_update, acc_2, logits_2, model_state_2)
+    return loss_1_update + loss_2_update, ((loss_1_update, acc_1, logits_1, model_state_1), (loss_2_update, acc_2, logits_2, model_state_2))
   return loss_fn
 
 
 def get_coteaching_step(loss_and_grad_fn):
   def train_step(state_1, state_2, x, y, lr):
-    (loss, (loss_1, acc_1, logits_1, model_state_1), (loss_2, acc_2, logits_2, model_state_2)), (grad_1, grad_2) = loss_and_grad_fn(state_1.optim.target, state_2.optim.target, state_1.model, state_2.model, x, y)
+    (loss, ((loss_1, acc_1, logits_1, model_state_1), (loss_2, acc_2, logits_2, model_state_2))), (grad_1, grad_2) = loss_and_grad_fn(state_1.optim.target, state_2.optim.target, state_1.model, state_2.model, x, y)
     new_optim_1 = state_1.optim.apply_gradient(grad_1, learning_rate=lr)
     new_optim_2 = state_2.optim.apply_gradient(grad_2, learning_rate=lr)
     state_1 = TrainState(optim=new_optim_1, model=model_state_1)
