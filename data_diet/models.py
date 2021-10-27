@@ -140,6 +140,28 @@ def get_model(args):
   return model
 
 
+def get_coteaching_model(args):
+  if args.model_1 == 'resnet18_lowres':
+    model_1 = ResNet18(num_classes=args.num_classes, lowres=True)
+  elif args.model_1 == 'resnet50_lowres':
+    model_1 = ResNet50(num_classes=args.num_classes, lowres=True)
+  elif args.model == 'simple_cnn_0':
+    model_1 = SimpleCNN(num_channels=[32, 64, 128], num_classes=args.num_classes)
+  else:
+    raise NotImplementedError  
+
+  if args.model_2 == 'resnet18_lowres':
+    model_2 = ResNet18(num_classes=args.num_classes, lowres=True)
+  elif args.model_2 == 'resnet50_lowres':
+    model_2 = ResNet50(num_classes=args.num_classes, lowres=True)
+  elif args.model == 'simple_cnn_0':
+    model_2 = SimpleCNN(num_channels=[32, 64, 128], num_classes=args.num_classes)
+  else:
+    raise NotImplementedError  
+
+  return model_1, model_2
+
+
 def get_num_params(params):
   return int(sum([np.prod(w.shape) for w in tree_flatten(params)[0]]))
 

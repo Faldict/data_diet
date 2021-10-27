@@ -1,5 +1,6 @@
 from flax.training import checkpoints, lr_schedule
 from jax import jit, value_and_grad
+from jax import numpy as jnp
 import numpy as np
 import time
 from .data import load_data, train_batches
@@ -55,6 +56,39 @@ def get_train_step(loss_and_grad_fn):
     new_optim = state.optim.apply_gradient(gradient, learning_rate=lr)
     state = TrainState(optim=new_optim, model=model_state)
     return state, logits, loss, acc
+  return train_step
+
+
+def get_coteaching_loss_fn(f_train_1, f_train_2, remember_rate=0.5):
+  def loss_fn(params_1, params_2, model_state_1, model_state_2, x, y):
+    logits_1, model_state_1 = f_train_1(params_1, model_state_1, x)
+    logits_2, model_state_2 = f_train_2(params_2, model_state_2, x)
+    
+    loss_1 = cross_entropy_loss(logits_1, y)
+    acc_1 = accuracy(logits_1, y)
+    ind_1_sorted = jnp.argsort(loss_1)
+
+    loss_2 = cross_entropy_loss(logits_2, y)
+    acc_2 = accuracy(logits_2, y)
+    ind_2_sorted = jnp.argsort(loss_2)
+    
+    num_remember = int(remember_rate * len(ind_1_sorted))
+    ind_1_update, ind_2_update = ind_1_sorted[:num_remember], ind_2_sorted[:num_remember]
+
+    loss_1_update = cross_entropy_loss(logits_1[:ind_2_update], y[ind_2_update])
+    loss_2_update = cross_entropy_loss(logits_2[:ind_1_update], y[ind_1_update])
+    return loss_1_update + loss_2_update, (loss_1, acc_1, logits_1, model_state_1), (loss_2, acc_2, logits_2, model_state_2)
+  return loss_fn
+
+
+def get_coteaching_step(loss_and_grad_fn):
+  def train_step(state_1, state_2, x, y, lr):
+    (loss, (loss_1, acc_1, logits_1, model_state_1), (loss_2, acc_2, logits_2, model_state_2)), (grad_1, grad_2) = loss_and_grad_fn(state_1.optim.target, state_2.optim.target, state_1.model, state_2.model, x, y)
+    new_optim_1 = state_1.optim.apply_gradient(grad_1, learning_rate=lr)
+    new_optim_2 = state_2.optim.apply_gradient(grad_2, learning_rate=lr)
+    state_1 = TrainState(optim=new_optim_1, model=model_state_1)
+    state_2 = TrainState(optim=new_optim_2, model=model_state_2)
+    return state_1, state_2, logits_1, logits_2, loss_1, loss_2, acc_1, acc_2
   return train_step
 
 
@@ -155,6 +189,75 @@ def train(args):
 
       # save checkpoint
       rec = _save_checkpoint(args.save_dir, t, state, rec, forget_stats)
+
+  # wrap it up
+  save_recorder(args.save_dir, rec)
+
+def coteaching(args):
+  # setup
+  set_global_seed()
+  _make_dirs(args)
+  I_train, X_train, Y_train, X_test, Y_test, args = load_data(args)
+  
+  # model 1
+  model_1 = get_model(args)
+  state_1, args = get_train_state(args, model_1)
+  f_train_1, f_test_1 = get_apply_fn_train(model_1), get_apply_fn_test(model_1)
+  test_step_1 = jit(get_test_step(f_test_1))
+  # train_step_1 = jit(get_train_step(value_and_grad(get_loss_fn(f_train_1), has_aux=True)))
+
+  # model 2
+  model_2 = get_model(args)
+  state_2, args = get_train_state(args, model_2)
+  f_train_2, f_test_2 = get_apply_fn_train(model_2), get_apply_fn_test(model_2)
+  test_step_2 = jit(get_test_step(f_test_2))
+  # train_step_2 = jit(get_train_step(value_and_grad(get_loss_fn(f_train_2), has_aux=True)))
+  
+  coteaching_step = jit(get_coteaching_step(value_and_grad(get_coteaching_loss_fn(f_train_1, f_train_2), (0, 1), has_aux=True)))
+  lr = get_lr_schedule(args)
+  rec = init_recorder()
+  forget_stats = init_forget_stats(args) if args.track_forgetting else None
+
+  # info
+  _log_and_save_args(args)
+  time_start = time.time()
+  time_now = time_start
+  print('train net...')
+
+  # log and save init
+  test_loss_1, test_acc_1 = test(test_step_1, state_1, X_test, Y_test, args.test_batch_size)
+  rec, time_now = _record_test(
+      rec, args.ckpt, args.num_steps, time_now, time_start, None, None, test_acc_1, test_loss_1, True)
+  rec = _save_checkpoint(args.save_dir, args.ckpt, state_1, rec, forget_stats)
+
+  # train loop
+  for t, idxs, x, y in train_batches(I_train, X_train, Y_train, args):
+    # train step
+    state_1, state_2, logits_1, logits_2, loss_1, loss_2, acc_1, acc_2 = coteaching_step(state_1, state_2, x, y, lr(t))
+    if args.track_forgetting:
+      batch_accs = np.array(correct(logits_1, y).astype(int))
+      forget_stats = update_forget_stats(forget_stats, idxs, batch_accs)
+    rec = record_train_stats(rec, t-1, loss_1.item(), acc_1.item(), lr(t))
+
+  #  BOOKKEEPING  #
+
+    # test and log every log_steps
+    if t % args.log_steps == 0:
+      test_loss, test_acc = test(test_step_1, state_1, X_test, Y_test, args.test_batch_size)
+      rec, time_now = _record_test(rec, t, args.num_steps, time_now, time_start, lr(t), acc_1, test_acc, test_loss)
+
+    # every early_save_steps before early_step and save_steps after early_step, and at end of training
+    if ((t <= args.early_step and t % args.early_save_steps == 0) or
+       (t > args.early_step and t % args.save_steps == 0) or
+       (t == args.num_steps)):
+
+      # test and log if not done already
+      if t % args.log_steps != 0:
+        test_loss, test_acc = test(test_step_1, state_1, X_test, Y_test, args.test_batch_size)
+        rec, time_now = _record_test(rec, t, args.num_steps, time_now, time_start, lr(t), acc_1, test_acc, test_loss)
+
+      # save checkpoint
+      rec = _save_checkpoint(args.save_dir, t, state_1, rec, forget_stats)
 
   # wrap it up
   save_recorder(args.save_dir, rec)
