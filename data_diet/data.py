@@ -150,14 +150,16 @@ def load_celeba(args):
     label = tf.cast(label, tf.float32)
     group = tf.cast(group, tf.float32)
 
-    return image, label, group
+    return image.numpy(), label.numpy(), group.numpy()
 
-  ds = tfds.load(name='celeb_a', split=['train', 'test'], data_dir=args.data_dir,
+  ds_train, ds_test = tfds.load(name='celeb_a', split=['train', 'test'], data_dir=args.data_dir,
       batch_size=-1, download=True).map(preprocessing_function)
-  (X_train, Y_train, A_train), (X_test, Y_test, A_test) = tfds.as_numpy(ds)
+  
+  X_train, Y_train, A_train = map(preprocessing_function, ds_train)
+  (X_test, Y_test, A_test) = map(preprocessing_function, ds_test)
   Y_train, Y_test = one_hot(Y_train, NUM_CLASSES), one_hot(Y_test, NUM_CLASSES)
   args = update_data_args(args, X_train, Y_train, X_test, Y_test)
-  
+
   return X_train, Y_train, A_train, X_test, Y_test, A_test, args
 
 
