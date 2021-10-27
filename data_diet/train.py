@@ -6,7 +6,7 @@ import time
 from .data import load_data, train_batches
 from .forgetting import init_forget_stats, update_forget_stats, save_forget_scores
 from .metrics import accuracy, correct, cross_entropy_loss, cross_entropy_loss_per_element
-from .models import get_apply_fn_test, get_apply_fn_train, get_coteaching_model
+from .models import get_apply_fn_test, get_apply_fn_train, get_model, get_coteaching_model
 from .recorder import init_recorder, record_ckpt, record_test_stats, record_train_stats, save_recorder
 from .test import get_test_step, test
 from .train_state import TrainState, get_train_state
