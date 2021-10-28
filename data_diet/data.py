@@ -284,6 +284,8 @@ def augment_data(X, Y, key, args):
       X, Y = augment_cifar100_data(X, Y, key)
     elif args.dataset == 'cinic10':
       X, Y = augment_cinic10_data(X, Y, key)
+    elif args.dataset.lower() == 'celeba':
+      pass
     else:
       raise NotImplementedError
   return X, Y
