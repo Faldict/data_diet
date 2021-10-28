@@ -137,17 +137,16 @@ def load_celeba(args):
 
   def preprocessing_function(feat_dict):
     # Separate out the image and target variable from the feature dictionary.
-    image = feat_dict[IMAGE_KEY].numpy().astype(np.float32)
+    image = feat_dict[IMAGE_KEY].numpy().astype(np.float32) / 255.
     label = feat_dict[ATTR_KEY][LABEL_KEY].numpy().astype(np.float32)
     group = feat_dict[ATTR_KEY][GROUP_KEY].numpy().astype(np.float32)
     # Resize and normalize image.
-    image_scaled = []
-    for i in range(image.shape[0]):
-        image_scaled.append(np.resize(image[i], [IMAGE_SIZE, IMAGE_SIZE, 3]))
-    image_scaled = np.stack(image_scaled)
-    image_scaled /= 255.0
-
-    return image_scaled, label, group
+    # image_scaled = []
+    # for i in range(image.shape[0]):
+    #     image_scaled.append(np.resize(image[i], [IMAGE_SIZE, IMAGE_SIZE, 3]))
+    # image_scaled = np.stack(image_scaled)
+    
+    return image, label, group
 
   ds_train, ds_test = tfds.load(name='celeb_a', split=['train', 'test'], data_dir=args.data_dir,
       batch_size=-1, download=True)

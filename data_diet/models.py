@@ -18,7 +18,7 @@ class SimpleCNN(nn.Module):
   @nn.compact
   def __call__(self, x, train=False):  # train is a dummy argument, model does not have different train and eval modes
     for nc in self.num_channels:
-      x = nn.Conv(nc, (3, 3), padding='SAME', dtype=self.dtype)(x)
+      x = nn.Conv(nc, (5, 5), padding='SAME', dtype=self.dtype)(x)
       x = nn.relu(x)
       x = nn.Conv(nc, (3, 3), (2, 2), 'SAME', dtype=self.dtype)(x)
       x = nn.relu(x)
@@ -134,7 +134,7 @@ def get_model(args):
   elif args.model == 'resnet50_lowres':
     model = ResNet50(num_classes=args.num_classes, lowres=True)
   elif args.model == 'simple_cnn_0':
-    model = SimpleCNN(num_channels=[32, 64, 128], num_classes=args.num_classes)
+    model = SimpleCNN(num_channels=[16, 64, 256], num_classes=args.num_classes)
   else:
     raise NotImplementedError
   return model
