@@ -132,32 +132,30 @@ def load_celeba(args):
   IMAGE_KEY = "image"
   LABEL_KEY = "Smiling"
   GROUP_KEY = "Male"
-  IMAGE_SIZE = 28
+  IMAGE_SIZE = 32
   NUM_CLASSES = 2
 
   def preprocessing_function(feat_dict):
     # Separate out the image and target variable from the feature dictionary.
-    image = feat_dict[IMAGE_KEY]
-    label = feat_dict[ATTR_KEY][LABEL_KEY]
-    group = feat_dict[ATTR_KEY][GROUP_KEY]
-
+    image = feat_dict[IMAGE_KEY].numpy().astype(np.float32)
+    label = feat_dict[ATTR_KEY][LABEL_KEY].numpy().astype(np.float32)
+    group = feat_dict[ATTR_KEY][GROUP_KEY].numpy().astype(np.float32)
     # Resize and normalize image.
-    image = tf.cast(image, tf.float32)
-    image = tf.image.resize(image, [IMAGE_SIZE, IMAGE_SIZE])
-    image /= 255.0
+    image_scaled = []
+    for i in range(image.shape[0]):
+        image_scaled.append(np.resize(image[i], [IMAGE_SIZE, IMAGE_SIZE, 3]))
+    image_scaled = np.stack(image_scaled)
+    image_scaled /= 255.0
 
-    # Cast label and group to float32.
-    label = tf.cast(label, tf.float32)
-    group = tf.cast(group, tf.float32)
+    return image_scaled, label, group
 
-    return image, label, group
-
-  ds = tfds.load(name='celeb_a', split=['train', 'test'], data_dir=args.data_dir,
-      batch_size=-1, download=True).map(preprocessing_function)
-  (X_train, Y_train, A_train), (X_test, Y_test, A_test) = tfds.as_numpy(ds)
+  ds_train, ds_test = tfds.load(name='celeb_a', split=['train', 'test'], data_dir=args.data_dir,
+      batch_size=-1, download=True)
+  X_train, Y_train, A_train = preprocessing_function(ds_train)
+  (X_test, Y_test, A_test) = preprocessing_function(ds_test)
   Y_train, Y_test = one_hot(Y_train, NUM_CLASSES), one_hot(Y_test, NUM_CLASSES)
   args = update_data_args(args, X_train, Y_train, X_test, Y_test)
-  
+
   return X_train, Y_train, A_train, X_test, Y_test, A_test, args
 
 
@@ -166,7 +164,9 @@ def load_fairness_dataset(args):
     X_train, Y_train, A_train, X_test, Y_test, A_test, args = load_celeba(args)
   else:
     raise NotImplementedError
-  return X_train, Y_train, A_train, X_test, Y_test, A_test, args
+
+  I_train = np.arange(X_train.shape[0], dtype=np.int32)
+  return I_train, X_train, Y_train, A_train, X_test, Y_test, A_test, args
 
 
 def update_train_data_args(args, I):
@@ -284,6 +284,8 @@ def augment_data(X, Y, key, args):
       X, Y = augment_cifar100_data(X, Y, key)
     elif args.dataset == 'cinic10':
       X, Y = augment_cinic10_data(X, Y, key)
+    elif args.dataset.lower() == 'celeba':
+      pass
     else:
       raise NotImplementedError
   return X, Y
