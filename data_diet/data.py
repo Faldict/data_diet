@@ -140,12 +140,14 @@ def load_celeba(args):
     image = feat_dict[IMAGE_KEY].numpy().astype(np.float32)
     label = feat_dict[ATTR_KEY][LABEL_KEY].numpy().astype(np.float32)
     group = feat_dict[ATTR_KEY][GROUP_KEY].numpy().astype(np.float32)
-
     # Resize and normalize image.
-    image = np.resize(image, [-1, IMAGE_SIZE, IMAGE_SIZE, 3])
-    image /= 255.0
+    image_scaled = []
+    for i in range(image.shape[0]):
+        image_scaled.append(np.resize(image[i], [IMAGE_SIZE, IMAGE_SIZE, 3]))
+    image_scaled = np.stack(image_scaled)
+    image_scaled /= 255.0
 
-    return image.numpy(), label.numpy(), group.numpy()
+    return image_scaled, label, group
 
   ds_train, ds_test = tfds.load(name='celeb_a', split=['train', 'test'], data_dir=args.data_dir,
       batch_size=-1, download=True)
@@ -162,7 +164,9 @@ def load_fairness_dataset(args):
     X_train, Y_train, A_train, X_test, Y_test, A_test, args = load_celeba(args)
   else:
     raise NotImplementedError
-  return X_train, Y_train, A_train, X_test, Y_test, A_test, args
+
+  I_train = np.arange(X_train.shape[0], dtype=np.int32)
+  return I_train, X_train, Y_train, A_train, X_test, Y_test, A_test, args
 
 
 def update_train_data_args(args, I):
