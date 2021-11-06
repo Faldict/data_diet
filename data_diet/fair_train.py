@@ -3,9 +3,9 @@ from jax import jit, value_and_grad
 from jax import numpy as jnp
 import numpy as np
 import time
-from .data import load_data, load_fairness_dataset, train_batches
+from .data import load_data, load_fairness_dataset, test_batches, train_batches
 from .forgetting import init_forget_stats, update_forget_stats, save_forget_scores
-from .metrics import accuracy, correct, cross_entropy_loss, cross_entropy_loss_per_element
+from .metrics import accuracy, binary_correct, correct, cross_entropy_loss, cross_entropy_loss_per_element, logistic_loss
 from .models import get_apply_fn_test, get_apply_fn_train, get_model, get_coteaching_model
 from .recorder import init_recorder, record_ckpt, record_test_stats, record_train_stats, save_recorder
 from .test import get_test_step, test
@@ -44,8 +44,8 @@ def get_lr_schedule(args):
 def get_loss_fn(f_train):
   def loss_fn(params, model_state, x, y):
     logits, model_state = f_train(params, model_state, x)
-    loss = cross_entropy_loss(logits, y)
-    acc = accuracy(logits, y)
+    loss = logistic_loss(logits, y)
+    acc = jnp.mean(binary_correct(logits, y))
     return loss, (acc, logits, model_state)
   return loss_fn
 
@@ -57,6 +57,25 @@ def get_train_step(loss_and_grad_fn):
     state = TrainState(optim=new_optim, model=model_state)
     return state, logits, loss, acc
   return train_step
+
+
+def get_test_step(f_test):
+  def test_step(state, x, y):
+    logits = f_test(state.optim.target, state.model, x)
+    loss = logistic_loss(logits, y)
+    acc = jnp.mean(binary_correct(logits, y))
+    return loss, acc, logits
+  return test_step
+
+
+def test(test_step, state, X, Y, batch_size):
+  loss, acc, N = 0, 0, X.shape[0]
+  for n, x, y in test_batches(X, Y, batch_size):
+    step_loss, step_acc, _ = test_step(state, x, y)
+    loss += step_loss * n
+    acc += step_acc * n
+  loss, acc = loss.item()/N, acc.item()/N
+  return loss, acc
 
 
 ########################################################################################################################
@@ -134,7 +153,7 @@ def train(args):
     # train step
     state, logits, loss, acc = train_step(state, x, y, lr(t))
     if args.track_forgetting:
-      batch_accs = np.array(correct(logits, y).astype(int))
+      batch_accs = np.array(binary_correct(logits, y).astype(int))
       forget_stats = update_forget_stats(forget_stats, idxs, batch_accs)
     rec = record_train_stats(rec, t-1, loss.item(), acc.item(), lr(t))
 

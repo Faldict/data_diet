@@ -133,7 +133,7 @@ def load_celeba(args):
   LABEL_KEY = "Smiling"
   GROUP_KEY = "Male"
   IMAGE_SIZE = 32
-  NUM_CLASSES = 2
+  NUM_CLASSES = 1
 
   def preprocessing_function(feat_dict):
     # Separate out the image and target variable from the feature dictionary.
@@ -154,7 +154,7 @@ def load_celeba(args):
   X_test, Y_test, A_test = preprocessing_function(ds_test)
   print("train", Y_train.mean(), A_train.mean())
   print("test", Y_test.mean(), A_test.mean())
-  Y_train, Y_test = one_hot(Y_train, NUM_CLASSES), one_hot(Y_test, NUM_CLASSES)
+  # Y_train, Y_test = one_hot(Y_train, NUM_CLASSES), one_hot(Y_test, NUM_CLASSES)
   args = update_data_args(args, X_train, Y_train, X_test, Y_test)
 
   return X_train, Y_train, A_train, X_test, Y_test, A_test, args
