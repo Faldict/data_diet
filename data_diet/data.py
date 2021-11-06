@@ -44,7 +44,10 @@ def sort_by_class(X, Y):
 
 def update_data_args(args, X_train, Y_train, X_test, Y_test):
   args.image_shape = X_train.shape[1:]
-  args.num_classes = Y_train.shape[1]
+  if len(Y_train.shape) == 1:
+    args.num_classes = 1
+  else:
+    args.num_classes = Y_train.shape[1]
   args.num_train_examples = X_train.shape[0]
   args.num_test_examples = X_test.shape[0]
   args.steps_per_epoch = args.num_train_examples // args.train_batch_size
