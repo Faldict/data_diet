@@ -8,7 +8,7 @@ from types import SimpleNamespace
 ROOT = sys.argv[1]
 EXP = sys.argv[2]
 RUN = int(sys.argv[3])
-META_MODEL_SEED, META_TRAIN_SEED, SEED_INCR = 42, 4242, 424242
+META_MODEL_SEED, META_TRAIN_SEED, SEED_INCR = 1928, 23345, 932423
 EP_STEPS = 390
 DATA_DIR = ROOT + '/data'
 EXPS_DIR = ROOT + '/exps'
@@ -25,17 +25,17 @@ args.scores_path = None
 args.subset_offset = None
 args.random_subset_seed = None
 # model
-args.model = 'simple_cnn_0'
+args.model = 'mlp'
 args.model_seed = META_MODEL_SEED + RUN * SEED_INCR
 args.load_dir = None
 args.ckpt = 0
 # optimizer
-args.lr = 0.1
+args.lr = 0.01
 args.beta = 0.9
 args.weight_decay = 0.0005
 args.nesterov = True
 args.lr_vitaly = False
-args.decay_factor = 0.2
+args.decay_factor = 0.9
 args.decay_steps = [60*EP_STEPS, 120*EP_STEPS, 160*EP_STEPS]
 # training
 args.num_steps = 200*EP_STEPS

@@ -16,7 +16,7 @@ class MLP(nn.Module):
   dtype: Any = jnp.float32
 
   @nn.compact
-  def __call__(self, x):
+  def __call__(self, x, train=False):
     x = x.reshape(x.shape[0], -1)
     for feat in self.features:
       x = nn.relu(nn.Dense(feat, dtype=self.dtype)(x))
