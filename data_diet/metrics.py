@@ -5,8 +5,9 @@ from jax import numpy as jnp
 def logistic_loss(logits, labels):
   def logistic(x):
     return 1 / (1 + jnp.exp(-x))
-  logits = jnp.clip(logistic(logits), 1e-12, 1-1e-12)
-  return -jnp.mean(labels * jnp.log(logits) + (1 - labels) * jnp.log(1 -  logits))
+  # logits = jnp.clip(logistic(logits), 1e-12, 1-1e-12)
+  # return -jnp.mean(labels * jnp.log(logits) + (1 - labels) * jnp.log(1 -  logits))
+  return jnp.mean(jnp.maximum(1 - 2. * (labels.astype(jnp.float32) -0.5) * logits, 0))
 
 
 def cross_entropy_loss(logits, labels):

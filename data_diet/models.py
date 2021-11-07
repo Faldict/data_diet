@@ -19,7 +19,8 @@ class MLP(nn.Module):
   def __call__(self, x, train=False):
     x = x.reshape(x.shape[0], -1)
     for feat in self.features:
-      x = nn.relu(nn.Dense(feat, dtype=self.dtype)(x))
+      x = nn.Dense(feat, dtype=self.dtype)(x)
+      x = nn.relu(x)
     x = nn.Dense(self.num_classes, dtype=self.dtype)(x)
     return x
 
@@ -144,7 +145,7 @@ ResNet50 = partial(ResNet, stage_sizes=[3, 4, 6, 3], block_cls=BottleneckResNetB
 
 def get_model(args):
   if args.model == 'mlp':
-    model = MLP(features=[256, 64], num_classes=args.num_classes)
+    model = MLP(features=[128, 32], num_classes=args.num_classes)
   elif args.model == 'resnet18_lowres':
     model = ResNet18(num_classes=args.num_classes, lowres=True)
   elif args.model == 'resnet50_lowres':

@@ -17,7 +17,7 @@ EXPS_DIR = ROOT + '/exps'
 args = SimpleNamespace()
 # data
 args.data_dir = DATA_DIR
-args.dataset = 'cifar10'
+args.dataset = 'celeba'
 # subsets
 args.subset = None
 args.subset_size = None
@@ -25,7 +25,7 @@ args.scores_path = None
 args.subset_offset = None
 args.random_subset_seed = None
 # model
-args.model = 'simple_cnn_0'
+args.model = 'mlp'
 args.model_seed = META_MODEL_SEED + RUN * SEED_INCR
 args.load_dir = None
 args.ckpt = 0
@@ -42,8 +42,8 @@ args.num_steps = 200*EP_STEPS
 args.train_seed = META_TRAIN_SEED + RUN * SEED_INCR
 args.train_batch_size = 128
 args.test_batch_size = 1024
-args.augment = True
-args.track_forgetting = True
+args.augment = False
+args.track_forgetting = False
 # checkpoints
 args.save_dir = EXPS_DIR + f'/{EXP}/run_{RUN}'
 args.log_steps = EP_STEPS

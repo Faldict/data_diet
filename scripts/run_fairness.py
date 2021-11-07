@@ -3,13 +3,15 @@
 from data_diet.fair_train import train
 import sys
 from types import SimpleNamespace
+from jax.config import config
+config.update("jax_debug_nans", True)
 
 # setup
 ROOT = sys.argv[1]
 EXP = sys.argv[2]
 RUN = int(sys.argv[3])
-META_MODEL_SEED, META_TRAIN_SEED, SEED_INCR = 1928, 23345, 932423
-EP_STEPS = 390
+META_MODEL_SEED, META_TRAIN_SEED, SEED_INCR = 934, 1113, 923
+EP_STEPS = 1600
 DATA_DIR = ROOT + '/data'
 EXPS_DIR = ROOT + '/exps'
 
@@ -17,7 +19,7 @@ EXPS_DIR = ROOT + '/exps'
 args = SimpleNamespace()
 # data
 args.data_dir = DATA_DIR
-args.dataset = 'celeba'
+args.dataset = 'adult'
 # subsets
 args.subset = None
 args.subset_size = None
@@ -30,10 +32,10 @@ args.model_seed = META_MODEL_SEED + RUN * SEED_INCR
 args.load_dir = None
 args.ckpt = 0
 # optimizer
-args.lr = 0.01
+args.lr = 0.5
 args.beta = 0.9
-args.weight_decay = 0.0005
-args.nesterov = True
+args.weight_decay = 0.005
+args.nesterov = False
 args.lr_vitaly = False
 args.decay_factor = 0.9
 args.decay_steps = [60*EP_STEPS, 120*EP_STEPS, 160*EP_STEPS]
@@ -43,7 +45,7 @@ args.train_seed = META_TRAIN_SEED + RUN * SEED_INCR
 args.train_batch_size = 128
 args.test_batch_size = 1024
 args.augment = False
-args.track_forgetting = True
+args.track_forgetting = False
 # checkpoints
 args.save_dir = EXPS_DIR + f'/{EXP}/fair_{RUN}'
 args.log_steps = EP_STEPS

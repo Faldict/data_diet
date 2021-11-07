@@ -3,6 +3,7 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
 import time
+from sklearn.model_selection import train_test_split
 
 config = tf.compat.v1.ConfigProto()
 config.gpu_options.allow_growth = True
@@ -37,7 +38,10 @@ def normalize_cinic10_images(X):
 
 
 def sort_by_class(X, Y):
-  sort_idxs = Y.argmax(1).argsort()
+  if len(Y.shape) == 1:
+    sort_idxs = Y.argsort()
+  else:
+    sort_idxs = Y.argmax(1).argsort()
   X, Y = X[sort_idxs], Y[sort_idxs]
   return X, Y
 
@@ -68,8 +72,8 @@ def load_cifar10(args):
   X_train, X_test = normalize_cifar10_images(X_train), normalize_cifar10_images(X_test)
   Y_train, Y_test = one_hot(Y_train, num_classes), one_hot(Y_test, num_classes)
   # sort by class
-  X_train, Y_train = sort_by_class(X_train, Y_train)
-  X_test, Y_test = sort_by_class(X_test, Y_test)
+  # X_train, Y_train = sort_by_class(X_train, Y_train)
+  # X_test, Y_test = sort_by_class(X_test, Y_test)
   # update args
   args = update_data_args(args, X_train, Y_train, X_test, Y_test)
   return X_train, Y_train, X_test, Y_test, args
@@ -125,10 +129,27 @@ def load_dataset(args):
     X_train, Y_train, X_test, Y_test, args = load_cifar100(args)
   elif args.dataset == 'cinic10':
     X_train, Y_train, X_test, Y_test, args = load_cinic10(args)
+  elif args.dataset.lower() == 'adult':
+    X_train, Y_train, A_train, X_test, Y_test, A_test, args = load_adult(args)
+    Y_train, Y_test = one_hot(Y_train, 2), one_hot(Y_test, 2)
+    args = update_data_args(args, X_train, Y_train, X_test, Y_test)
+  elif args.dataset.lower() == 'celeba':
+    X_train, Y_train, A_train, X_test, Y_test, A_test, args = load_celeba(args)
+    Y_train, Y_test = one_hot(Y_train, 2), one_hot(Y_test, 2)
+    args = update_data_args(args, X_train, Y_train, X_test, Y_test)
   else:
     raise NotImplementedError
   return X_train, Y_train, X_test, Y_test, args
 
+
+def load_adult(args):
+    path = args.data_dir + '/adult.npy'
+    with open(path, 'rb') as f:
+        X, Y = np.load(f), np.load(f)
+        A = X[:, 0]
+    X_train, X_test, Y_train, Y_test, A_train, A_test = train_test_split(X, Y, A, test_size=0.2, stratify=Y)
+    args = update_data_args(args, X_train, Y_train, X_test, Y_test)
+    return X_train, Y_train, A_train, X_test, Y_test, A_test, args
 
 def load_celeba(args):
   ATTR_KEY = "attributes"
@@ -140,7 +161,9 @@ def load_celeba(args):
 
   def preprocessing_function(feat_dict):
     # Separate out the image and target variable from the feature dictionary.
-    image = feat_dict[IMAGE_KEY].numpy().astype(np.float32) / 255.
+    image = tf.image.resize_with_crop_or_pad(feat_dict[IMAGE_KEY], IMAGE_SIZE, IMAGE_SIZE).numpy().astype(np.float32)/255.
+    image = (image - 0.5) / 0.5
+    print(image.shape)
     label = feat_dict[ATTR_KEY][LABEL_KEY].numpy().astype(np.float32)
     group = feat_dict[ATTR_KEY][GROUP_KEY].numpy().astype(np.float32)
     # Resize and normalize image.
@@ -156,6 +179,8 @@ def load_celeba(args):
   X_train, Y_train, A_train = preprocessing_function(ds_train)
   X_test, Y_test, A_test = preprocessing_function(ds_test)
   print("train", Y_train.mean(), A_train.mean())
+  X_train, Y_train = sort_by_class(X_train, Y_train)
+  X_test, Y_test = sort_by_class(X_test, Y_test)
   print("test", Y_test.mean(), A_test.mean())
   # Y_train, Y_test = one_hot(Y_train, NUM_CLASSES), one_hot(Y_test, NUM_CLASSES)
   args = update_data_args(args, X_train, Y_train, X_test, Y_test)
@@ -166,6 +191,10 @@ def load_celeba(args):
 def load_fairness_dataset(args):
   if args.dataset.lower() == 'celeba':
     X_train, Y_train, A_train, X_test, Y_test, A_test, args = load_celeba(args)
+    Y_train, Y_test = one_hot(Y_train, 2), one_hot(Y_test, 2)
+    args = update_data_args(args, X_train, Y_train, X_test, Y_test)
+  elif args.dataset.lower() == 'adult':
+    X_train, Y_train, A_train, X_test, Y_test, A_test, args = load_adult(args)
   else:
     raise NotImplementedError
 
@@ -289,7 +318,7 @@ def augment_data(X, Y, key, args):
     elif args.dataset == 'cinic10':
       X, Y = augment_cinic10_data(X, Y, key)
     elif args.dataset.lower() == 'celeba':
-      pass
+      X, Y = augment_cifar10_data(X, Y, key)
     else:
       raise NotImplementedError
   return X, Y

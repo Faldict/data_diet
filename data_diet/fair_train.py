@@ -44,8 +44,8 @@ def get_lr_schedule(args):
 def get_loss_fn(f_train):
   def loss_fn(params, model_state, x, y):
     logits, model_state = f_train(params, model_state, x)
-    loss = logistic_loss(logits, y)
-    acc = jnp.mean(binary_correct(logits, y))
+    loss = cross_entropy_loss(logits, y)
+    acc = jnp.mean(correct(logits, y))
     return loss, (acc, logits, model_state)
   return loss_fn
 
@@ -62,8 +62,8 @@ def get_train_step(loss_and_grad_fn):
 def get_test_step(f_test):
   def test_step(state, x, y):
     logits = f_test(state.optim.target, state.model, x)
-    loss = logistic_loss(logits, y)
-    acc = jnp.mean(binary_correct(logits, y))
+    loss = cross_entropy_loss(logits, y)
+    acc = jnp.mean(correct(logits, y))
     return loss, acc, logits
   return test_step
 
@@ -94,19 +94,20 @@ def _make_dirs(args):
   if args.track_forgetting: make_dir(args.save_dir + '/forget_scores')
 
 
-def _print_stats(t, T, t_incr, t_tot, lr, train_acc, test_acc, init=False):
+def _print_stats(t, T, t_incr, t_tot, lr, train_acc, train_loss, test_acc, test_loss, init=False):
   prog = t / T * 100
   lr = '  init' if init else f'{lr:.4f}'
   train_acc = ' init' if init else f'{train_acc:.3f}'
+  train_loss = ' init' if init else f'{train_loss:.4f}'
   print(f'{prog:6.2f}% | time: {t_incr:5.1f}s ({t_tot/60:5.1f}m) | step: {t:6d} |',
-        f'lr: {lr} | train acc: {train_acc} | test acc: {test_acc:.3f}')
+          f'lr: {lr} | train acc: {train_acc} | train loss: {train_loss} | test acc: {test_acc:.3f} | test loss: {test_loss:.4f}')
 
 
-def _record_test(rec, t, T, t_prev, t_start, lr, train_acc, test_acc, test_loss, init=False):
+def _record_test(rec, t, T, t_prev, t_start, lr, train_acc, train_loss, test_acc, test_loss, init=False):
   rec = record_test_stats(rec, t, test_loss, test_acc)
   t_now = time.time()
   t_incr, t_tot = t_now - t_prev, t_now - t_start
-  _print_stats(t, T, t_incr, t_tot, lr, train_acc, test_acc, init)
+  _print_stats(t, T, t_incr, t_tot, lr, train_acc, train_loss, test_acc, test_loss, init)
   return rec, t_now
 
 
@@ -145,7 +146,7 @@ def train(args):
   # log and save init
   test_loss, test_acc = test(test_step, state, X_test, Y_test, args.test_batch_size)
   rec, time_now = _record_test(
-      rec, args.ckpt, args.num_steps, time_now, time_start, None, None, test_acc, test_loss, True)
+      rec, args.ckpt, args.num_steps, time_now, time_start, None, None, None, test_acc, test_loss, True)
   rec = _save_checkpoint(args.save_dir, args.ckpt, state, rec, forget_stats)
 
   # train loop
@@ -153,7 +154,7 @@ def train(args):
     # train step
     state, logits, loss, acc = train_step(state, x, y, lr(t))
     if args.track_forgetting:
-      batch_accs = np.array(binary_correct(logits, y).astype(int))
+      batch_accs = np.array(correct(logits, y).astype(int))
       forget_stats = update_forget_stats(forget_stats, idxs, batch_accs)
     rec = record_train_stats(rec, t-1, loss.item(), acc.item(), lr(t))
 
@@ -162,7 +163,7 @@ def train(args):
     # test and log every log_steps
     if t % args.log_steps == 0:
       test_loss, test_acc = test(test_step, state, X_test, Y_test, args.test_batch_size)
-      rec, time_now = _record_test(rec, t, args.num_steps, time_now, time_start, lr(t), acc, test_acc, test_loss)
+      rec, time_now = _record_test(rec, t, args.num_steps, time_now, time_start, lr(t), acc, loss, test_acc, test_loss)
 
     # every early_save_steps before early_step and save_steps after early_step, and at end of training
     if ((t <= args.early_step and t % args.early_save_steps == 0) or
@@ -172,7 +173,7 @@ def train(args):
       # test and log if not done already
       if t % args.log_steps != 0:
         test_loss, test_acc = test(test_step, state, X_test, Y_test, args.test_batch_size)
-        rec, time_now = _record_test(rec, t, args.num_steps, time_now, time_start, lr(t), acc, test_acc, test_loss)
+        rec, time_now = _record_test(rec, t, args.num_steps, time_now, time_start, lr(t), acc, loss, test_acc, test_loss)
 
       # save checkpoint
       rec = _save_checkpoint(args.save_dir, t, state, rec, forget_stats)
