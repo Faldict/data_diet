@@ -17,7 +17,7 @@ EXPS_DIR = ROOT + '/exps'
 args = SimpleNamespace()
 # data
 args.data_dir = DATA_DIR
-args.dataset = 'celeba'
+args.dataset = EXP
 # subsets
 args.subset = None
 args.subset_size = None

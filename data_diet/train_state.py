@@ -15,13 +15,14 @@ class TrainState:
 
 
 def create_train_state(args, model):
-  @jit
+  # @jit
   def init(*args):
     return model.init(*args)
   key, input = random.PRNGKey(args.model_seed), jnp.ones((1, *args.image_shape), model.dtype)
   model_state, params = init(key, input).pop('params')
-  if not hasattr(args, 'nesterov'): args.nesterov = False
-  opt = optim.Momentum(args.lr, args.beta, args.weight_decay, args.nesterov).create(params)
+  # if not hasattr(args, 'nesterov'): args.nesterov = False
+  opt = optim.Adam(args.lr, args.beta, 0.999, 1e-8, args.weight_decay).create(params)
+  # opt = optim.GradientDescent(args.lr)
   train_state = TrainState(optim=opt, model=model_state)
   return train_state
 

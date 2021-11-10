@@ -2,6 +2,7 @@ from flax import linen as nn
 from functools import partial
 from jax import numpy as jnp
 from jax.tree_util import tree_flatten
+from jax.nn.initializers import uniform, normal, lecun_normal, he_normal
 from typing import Any, Callable, Sequence, Tuple
 import numpy as np
 
@@ -19,9 +20,9 @@ class MLP(nn.Module):
   def __call__(self, x, train=False):
     x = x.reshape(x.shape[0], -1)
     for feat in self.features:
-      x = nn.Dense(feat, dtype=self.dtype)(x)
+      x = nn.Dense(feat, dtype=self.dtype, kernel_init=he_normal())(x)
       x = nn.relu(x)
-    x = nn.Dense(self.num_classes, dtype=self.dtype)(x)
+    x = nn.Dense(self.num_classes, dtype=self.dtype, kernel_init=normal(0.1))(x)
     return x
 
 
@@ -33,12 +34,12 @@ class SimpleCNN(nn.Module):
   @nn.compact
   def __call__(self, x, train=False):  # train is a dummy argument, model does not have different train and eval modes
     for nc in self.num_channels:
-      x = nn.Conv(nc, (5, 5), padding='SAME', dtype=self.dtype)(x)
+      x = nn.Conv(nc, (5, 5), padding='SAME', dtype=self.dtype, kernel_init=he_normal())(x)
       x = nn.relu(x)
-      x = nn.Conv(nc, (3, 3), (2, 2), 'SAME', dtype=self.dtype)(x)
+      x = nn.Conv(nc, (3, 3), (2, 2), 'SAME', dtype=self.dtype, kernel_init=he_normal())(x)
       x = nn.relu(x)
     x = jnp.mean(x, axis=(1, 2))
-    x = nn.Dense(self.num_classes, dtype=self.dtype)(x)
+    x = nn.Dense(self.num_classes, dtype=self.dtype, kernel_init=normal())(x)
     return x
 
 

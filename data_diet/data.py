@@ -179,8 +179,8 @@ def load_celeba(args):
   X_train, Y_train, A_train = preprocessing_function(ds_train)
   X_test, Y_test, A_test = preprocessing_function(ds_test)
   print("train", Y_train.mean(), A_train.mean())
-  X_train, Y_train = sort_by_class(X_train, Y_train)
-  X_test, Y_test = sort_by_class(X_test, Y_test)
+  # X_train, Y_train = sort_by_class(X_train, Y_train)
+  # X_test, Y_test = sort_by_class(X_test, Y_test)
   print("test", Y_test.mean(), A_test.mean())
   # Y_train, Y_test = one_hot(Y_train, NUM_CLASSES), one_hot(Y_test, NUM_CLASSES)
   args = update_data_args(args, X_train, Y_train, X_test, Y_test)
@@ -191,8 +191,6 @@ def load_celeba(args):
 def load_fairness_dataset(args):
   if args.dataset.lower() == 'celeba':
     X_train, Y_train, A_train, X_test, Y_test, A_test, args = load_celeba(args)
-    Y_train, Y_test = one_hot(Y_train, 2), one_hot(Y_test, 2)
-    args = update_data_args(args, X_train, Y_train, X_test, Y_test)
   elif args.dataset.lower() == 'adult':
     X_train, Y_train, A_train, X_test, Y_test, A_test, args = load_adult(args)
   else:

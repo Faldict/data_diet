@@ -1,4 +1,5 @@
 from flax.training import checkpoints, lr_schedule
+import jax
 from jax import jit, value_and_grad
 from jax import numpy as jnp
 import numpy as np
@@ -44,8 +45,8 @@ def get_lr_schedule(args):
 def get_loss_fn(f_train):
   def loss_fn(params, model_state, x, y):
     logits, model_state = f_train(params, model_state, x)
-    loss = cross_entropy_loss(logits, y)
-    acc = jnp.mean(correct(logits, y))
+    loss = logistic_loss(logits, y)
+    acc = jnp.mean(binary_correct(logits, y))
     return loss, (acc, logits, model_state)
   return loss_fn
 
@@ -55,26 +56,27 @@ def get_train_step(loss_and_grad_fn):
     (loss, (acc, logits, model_state)), gradient = loss_and_grad_fn(state.optim.target, state.model, x, y)
     new_optim = state.optim.apply_gradient(gradient, learning_rate=lr)
     state = TrainState(optim=new_optim, model=model_state)
-    return state, logits, loss, acc
+    return state, logits, loss, acc, gradient
   return train_step
 
 
 def get_test_step(f_test):
   def test_step(state, x, y):
     logits = f_test(state.optim.target, state.model, x)
-    loss = cross_entropy_loss(logits, y)
-    acc = jnp.mean(correct(logits, y))
+    loss = logistic_loss(logits, y)
+    acc = jnp.mean(binary_correct(logits, y))
     return loss, acc, logits
   return test_step
 
 
 def test(test_step, state, X, Y, batch_size):
-  loss, acc, N = 0, 0, X.shape[0]
+  loss, acc, N = 0, 0, 0
   for n, x, y in test_batches(X, Y, batch_size):
-    step_loss, step_acc, _ = test_step(state, x, y)
+    step_loss, step_acc, logits = test_step(state, x, y)
     loss += step_loss * n
     acc += step_acc * n
-  loss, acc = loss.item()/N, acc.item()/N
+    N += n
+  loss, acc = loss / N, acc / N
   return loss, acc
 
 
@@ -152,7 +154,7 @@ def train(args):
   # train loop
   for t, idxs, x, y in train_batches(I_train, X_train, Y_train, args):
     # train step
-    state, logits, loss, acc = train_step(state, x, y, lr(t))
+    state, logits, loss, acc, grad = train_step(state, x, y, lr(t))
     if args.track_forgetting:
       batch_accs = np.array(correct(logits, y).astype(int))
       forget_stats = update_forget_stats(forget_stats, idxs, batch_accs)

@@ -3,12 +3,11 @@ from jax import numpy as jnp
 
 
 def logistic_loss(logits, labels):
-  def logistic(x):
-    return 1 / (1 + jnp.exp(-x))
-  # logits = jnp.clip(logistic(logits), 1e-12, 1-1e-12)
+  logits = logits.squeeze()
+  # logits = nn.sigmoid(logits)
   # return -jnp.mean(labels * jnp.log(logits) + (1 - labels) * jnp.log(1 -  logits))
-  return jnp.mean(jnp.maximum(1 - 2. * (labels.astype(jnp.float32) -0.5) * logits, 0))
-
+  return jnp.mean(jnp.maximum(1 - 20. * (labels.astype(jnp.float32) -0.5) * logits, 0))
+  # return jnp.mean(jnp.exp((labels - 0.5) * logits))
 
 def cross_entropy_loss(logits, labels):
   return jnp.mean(-jnp.sum(nn.log_softmax(logits) * labels, axis=-1))
@@ -23,7 +22,7 @@ def correct(logits, labels):
 
 
 def binary_correct(logits, labels):
-  return jnp.where(logits > 0, 1, 0) == labels
+  return (logits.squeeze() > 0) == labels
 
 
 def accuracy(logits, labels):

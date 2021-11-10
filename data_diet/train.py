@@ -55,7 +55,7 @@ def get_train_step(loss_and_grad_fn):
     (loss, (acc, logits, model_state)), gradient = loss_and_grad_fn(state.optim.target, state.model, x, y)
     new_optim = state.optim.apply_gradient(gradient, learning_rate=lr)
     state = TrainState(optim=new_optim, model=model_state)
-    return state, logits, loss, acc
+    return state, logits, loss, acc, gradient
   return train_step
 
 
@@ -164,7 +164,7 @@ def train(args):
   # train loop
   for t, idxs, x, y in train_batches(I_train, X_train, Y_train, args):
     # train step
-    state, logits, loss, acc = train_step(state, x, y, lr(t))
+    state, logits, loss, acc, gradient = train_step(state, x, y, lr(t))
     if args.track_forgetting:
       batch_accs = np.array(correct(logits, y).astype(int))
       forget_stats = update_forget_stats(forget_stats, idxs, batch_accs)
