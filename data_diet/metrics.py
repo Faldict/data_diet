@@ -4,10 +4,14 @@ from jax import numpy as jnp
 
 def logistic_loss(logits, labels):
   logits = logits.squeeze()
-  # logits = nn.sigmoid(logits)
-  # return -jnp.mean(labels * jnp.log(logits) + (1 - labels) * jnp.log(1 -  logits))
-  return jnp.mean(jnp.maximum(1 - 20. * (labels.astype(jnp.float32) -0.5) * logits, 0))
-  # return jnp.mean(jnp.exp((labels - 0.5) * logits))
+  return jnp.mean(jnp.maximum(1 - 2. * (labels.astype(jnp.float32) -0.5) * logits, 0))
+
+
+def constraints(logits, attributes):
+  """ E[XZ] - E[X]E[Z]
+  """
+  return jnp.mean(logits * attributes) - jnp.mean(logits) * jnp.mean(attributes)
+
 
 def cross_entropy_loss(logits, labels):
   return jnp.mean(-jnp.sum(nn.log_softmax(logits) * labels, axis=-1))
@@ -27,3 +31,7 @@ def binary_correct(logits, labels):
 
 def accuracy(logits, labels):
   return jnp.mean(correct(logits, labels))
+
+
+def fairness(logits, labels, attributes):
+  return jnp.sum(logits[attributes > 0]), jnp.sum(logits[attributes == 0])
