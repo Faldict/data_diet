@@ -20,7 +20,7 @@ parser.add_argument('-t', '--type', type=str, default='covariance')
 
 args = parser.parse_args()
 
-run_dir = os.path.join(args.root, f'/exps/{args.exp}/run_{args.run}')
+run_dir = os.path.join(args.root, f'/exps/{args.exp}/fair_{args.run}')
 arg = load_args(run_dir)
 arg.load_dir = run_dir
 arg.ckpt = args.step
