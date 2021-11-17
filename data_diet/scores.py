@@ -1,6 +1,6 @@
 from .data import get_class_balanced_random_subset
 from .gradients import compute_mean_logit_gradients, flatten_jacobian, get_mean_logit_gradients_fn
-from .metrics import cross_entropy_loss
+from .metrics import constraints, cross_entropy_loss
 import flax.linen as nn
 from jax import jacrev, jit, vmap
 import jax.numpy as jnp
@@ -44,6 +44,18 @@ def get_grad_norm_fn(fn, params, state):
     return scores
 
   return lambda X, Y: np.array(score_fn(X, Y))
+
+
+def get_covariance_fn(fn, params, state):
+
+  @jit
+  def score_fn(X, Y, Z):
+    per_sample_loss_fn = lambda p, x, y, z: vmap(constraints)(fn(p, state, x), z)
+    loss_grads = flatten_jacobian(jacrev(per_sample_loss_fn)(params, X, Y, Z))
+    scores = jnp.linalg.norm(loss_grads, axis=-1)
+    return scores
+
+  return lambda X, Y, Z: np.array(score_fn(X, Y, Z))
 
 
 def get_score_fn(fn, params, state, score_type):
