@@ -3,6 +3,7 @@
 from data_diet.train import train
 import sys
 from types import SimpleNamespace
+import os
 
 # setup
 ROOT = sys.argv[1]
@@ -23,7 +24,7 @@ args.dataset = 'cifar10'
 # subsets
 args.subset = 'keep_max_scores'
 args.subset_size = SIZE
-args.scores_path = SCORE_PATH
+args.scores_path = os.path.join(EXPS_DIR, EXP, SCORE_PATH)
 args.subset_offset = None
 args.random_subset_seed = None
 # model

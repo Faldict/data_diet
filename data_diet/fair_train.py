@@ -1,6 +1,6 @@
 from flax.training import checkpoints, lr_schedule
 import jax
-from jax import jit, value_and_grad
+from jax import jit, value_and_grad, random
 from jax import numpy as jnp
 import numpy as np
 import time
@@ -48,7 +48,7 @@ def get_loss_fn(f_train):
     loss = logistic_loss(logits, y)
     con = constraints(logits, z)
     acc = jnp.mean(binary_correct(logits, y))
-    return loss + con, (acc, logits, model_state)
+    return loss + 0. * con, (acc, logits, model_state)
   return loss_fn
 
 

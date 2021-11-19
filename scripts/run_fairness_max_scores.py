@@ -43,11 +43,11 @@ args.decay_steps = [60*EP_STEPS, 120*EP_STEPS, 160*EP_STEPS]
 args.num_steps = 200*EP_STEPS
 args.train_seed = META_TRAIN_SEED + RUN * SEED_INCR
 args.train_batch_size = 128
-args.test_batch_size = 20
+args.test_batch_size = 10000
 args.augment = False
 args.track_forgetting = False
 # checkpoints
-args.save_dir = EXPS_DIR + f'/{EXP}/fair_{RUN}'
+args.save_dir = EXPS_DIR + f'/{EXP}/fair_{RUN}/size_{SIZE}'
 args.log_steps = EP_STEPS
 args.early_step = 0
 args.early_save_steps = None

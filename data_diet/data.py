@@ -2,7 +2,7 @@ from jax import random
 import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
-import time
+import os, time
 from sklearn.model_selection import train_test_split
 
 config = tf.compat.v1.ConfigProto()
@@ -156,13 +156,13 @@ def load_celeba(args):
   IMAGE_KEY = "image"
   LABEL_KEY = "Smiling"
   GROUP_KEY = "Male"
-  IMAGE_SIZE = 32
+  IMAGE_SIZE = 28
   NUM_CLASSES = 1
 
   def preprocessing_function(feat_dict):
     # Separate out the image and target variable from the feature dictionary.
     image = tf.image.resize_with_crop_or_pad(feat_dict[IMAGE_KEY], IMAGE_SIZE, IMAGE_SIZE).numpy().astype(np.float32)/255.
-    image = (image - 0.5) / 0.5
+    # image = (image - 0.5) / 0.5
     print(image.shape)
     label = feat_dict[ATTR_KEY][LABEL_KEY].numpy().astype(np.float32)
     group = feat_dict[ATTR_KEY][GROUP_KEY].numpy().astype(np.float32)
@@ -197,6 +197,8 @@ def load_fairness_dataset(args):
     raise NotImplementedError
 
   I_train = np.arange(X_train.shape[0], dtype=np.int32)
+  if args.subset:
+    I_train, args = subset_train_idxs(I_train, args)
   return I_train, X_train, Y_train, A_train, X_test, Y_test, A_test, args
 
 

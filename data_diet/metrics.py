@@ -34,4 +34,6 @@ def accuracy(logits, labels):
 
 
 def fairness(logits, labels, attributes):
-  return jnp.sum(logits[attributes > 0]), jnp.sum(logits[attributes == 0])
+  return jnp.where(attributes > 0, logits > 0, 0).sum(), jnp.where(attributes == 0, logits > 0, 0).sum()
+
+

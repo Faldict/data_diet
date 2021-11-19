@@ -101,9 +101,9 @@ def compute_scores(fn, params, state, X, Y, batch_sz, score_type):
 
 
 def compute_fair_scores(fn, params, state, X, Y, Z, batch_size, score_type):
-  n_batches = X.shape(0) // batch_size
-  Xs, Ys, Zs = np.split(X, n_batches), np.split(Y, n_batches), np.split(Z, n_batches)
-  score_fn = get_score_fn(fn, params, state, score_type)
+  n_batches = X.shape[0] // batch_size
+  Xs, Ys, Zs = np.array_split(X, n_batches), np.array_split(Y, n_batches), np.array_split(Z, n_batches)
+  score_fn = get_fair_score_fn(fn, params, state, score_type)
   scores = []
   for i, (x, y, z) in enumerate(zip(Xs, Ys, Zs)):
     print(f'score batch {i+1} of {n_batches}')
