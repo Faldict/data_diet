@@ -151,6 +151,17 @@ def load_adult(args):
     args = update_data_args(args, X_train, Y_train, X_test, Y_test)
     return X_train, Y_train, A_train, X_test, Y_test, A_test, args
 
+def load_jigsaw(args):
+    path = args.data_dir
+    with open(path + '/Jigsaw_train.npy', 'rb') as f:
+        X_train, Y_train, A_train = np.load(f), np.load(f), np.load(f)
+    with open(path + '/Jigsaw_test.npy', 'rb') as f:
+        X_test, Y_test, A_test = np.load(f), np.load(f), np.load(f)
+    from sklearn import utils
+    X_train, Y_train, A_train = utils.shuffle(X_train, Y_train, A_train)
+    args = update_data_args(args, X_train, Y_train, X_test, Y_test)
+    return X_train, Y_train, A_train, X_test, Y_test, A_test, args
+
 def load_celeba(args):
   ATTR_KEY = "attributes"
   IMAGE_KEY = "image"
@@ -193,6 +204,8 @@ def load_fairness_dataset(args):
     X_train, Y_train, A_train, X_test, Y_test, A_test, args = load_celeba(args)
   elif args.dataset.lower() == 'adult':
     X_train, Y_train, A_train, X_test, Y_test, A_test, args = load_adult(args)
+  elif args.dataset.lower() == 'jigsaw':
+    X_train, Y_train, A_train, X_test, Y_test, A_test, args = load_jigsaw(args)
   else:
     raise NotImplementedError
 
@@ -241,6 +254,9 @@ def subset_train_idxs_by_offset(I, args):
 
 
 def subset_train_idxs(I, args):
+  # full data
+  if args.subset_size == -1:
+    return I, args
   if args.subset == 'random':
     I, args = subset_train_idxs_randomly(I, args)
   elif args.subset == 'offset':

@@ -10,7 +10,11 @@ def logistic_loss(logits, labels):
 def constraints(logits, attributes):
   """ E[XZ] - E[X]E[Z]
   """
-  return jnp.mean(logits * attributes) - jnp.mean(logits) * jnp.mean(attributes)
+  EPS = 1e-8
+  group_a = jnp.where(attributes > 0, logits, 0).sum() / (jnp.where(attributes > 0, 1, 0).sum() + EPS)
+  group_b = jnp.where(attributes <= 0, logits, 0).sum() / (jnp.where(attributes <= 0, 1, 0).sum() + EPS)
+  # correlation = jnp.where(attributes > 0, logits, 0).sum() - jnp.where(attributes <= 0, logits, 0).sum()
+  return jnp.abs(group_a - group_b)
 
 
 def cross_entropy_loss(logits, labels):
@@ -34,6 +38,6 @@ def accuracy(logits, labels):
 
 
 def fairness(logits, labels, attributes):
-  return jnp.where(attributes > 0, logits > 0, 0).sum(), jnp.where(attributes == 0, logits > 0, 0).sum()
+  return jnp.where((attributes.squeeze() > 0) & (logits.squeeze() > 0), 1, 0).sum(), jnp.where((attributes.squeeze() == 0) & (logits.squeeze() > 0), 1, 0).sum()
 
 

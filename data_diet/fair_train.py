@@ -140,6 +140,7 @@ def test(test_step, state, X, Y, Z, batch_size):
     pos += step_pos
     neg += step_neg
     N += n
+  # print(acc, N, pos, neg)
   loss, acc = loss / N, acc / N
   pos, neg = pos / jnp.sum(Z > 0), neg / jnp.sum(Z == 0)
   return loss, acc, pos - neg
@@ -247,3 +248,4 @@ def train(args):
 
   # wrap it up
   save_recorder(args.save_dir, rec)
+  return test_acc, test_disp
